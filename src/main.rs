@@ -11,17 +11,21 @@ pub struct App {
     running: bool,
     birthday: String,
     image: StatefulProtocol,
+    image2: StatefulProtocol,
     is_luffy_default:bool,
+    is_sanji: bool,
     counter: u8,
 }
 
 impl App {
-    pub fn new(initial_image_protocol: StatefulProtocol) -> Self {
+    pub fn new(initial_image_protocol: StatefulProtocol,img2: StatefulProtocol) -> Self {
         App {
             running: true,
             birthday: together(),
             image: initial_image_protocol,
+            image2: img2,
             is_luffy_default: true,
+            is_sanji: true,
             counter: 0,
 
         }
@@ -70,6 +74,10 @@ impl App {
 
         let image_widget = StatefulImage::default();
         frame.render_stateful_widget(image_widget, main_layout[0], &mut self.image);
+        
+        let image_widget1 = StatefulImage::default();
+        frame.render_stateful_widget(image_widget1,main_layout[1], &mut self.image2);
+
     }
 
     // so what il do it il have a folder for each day in teh assets folder
@@ -90,6 +98,7 @@ impl App {
         // also since i want to change the state of something in the App struct
         // i need to make it a method on the App struct or else how would i be able to acccess the
         // self stuff
+        // // btw its deadass not even doing that its just switching the image and setting it 
         //
         // i think if i want more pictures instead of using a vector il just spam this next_path
         // and instead of a bool i can just make it a number and a match case and then if the index
@@ -104,6 +113,23 @@ impl App {
         self.is_luffy_default = !self.is_luffy_default; // Flip the state
         Ok(())
     }
+
+    pub fn new_image(&mut self ) -> Result<()>{
+        let next = if self.is_sanji {
+            "./assets/zoro.png"
+        } else {
+            "./assets/sanji.png"
+        };
+
+        let picker = Picker::from_query_stdio()?;
+        let dyn_img = image::ImageReader::open(next)?
+            .decode()?;
+
+        self.image2 = picker.new_resize_protocol(dyn_img);
+        self.is_sanji = !self.is_sanji;
+        Ok(())
+
+            }
 
     fn handle_crossterm_events(&mut self) -> Result<()> {
         if event::poll(std::time::Duration::from_millis(250))? {
@@ -131,6 +157,9 @@ impl App {
             },
             (_,KeyCode::Char('w')) => {
                 self.increment_counter()
+            }
+            (_,KeyCode::Char('s'))=> {
+                self.new_image().expect("nothing");
             }
             _ => {}
         }
@@ -183,8 +212,13 @@ fn main() -> Result<()> {
         .decode()
         .map_err(|e| eyre::eyre!("Failed to decode image: {}", e))?;
     let image_protocol = picker.new_resize_protocol(dyn_img);
+    
+    let picker1 = Picker::from_query_stdio()?;
+    let dyn_img1 = image::ImageReader::open("./assets/sanji.png")?
+        .decode()?;
+    let image_protocol1 = picker1.new_resize_protocol(dyn_img1);
 
-    let app = App::new(image_protocol);
+    let app = App::new(image_protocol,image_protocol1);
     let result = app.run(terminal);
 
     execute!(stdout(), LeaveAlternateScreen)?;
