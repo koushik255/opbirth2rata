@@ -12,23 +12,36 @@ pub struct App {
     birthday: String,
     image: StatefulProtocol,
     image2: StatefulProtocol,
+    image3: StatefulProtocol,
+    image4:StatefulProtocol,
     is_luffy_default:bool,
     is_sanji: bool,
     counter: u8,
+    
 }
 
 impl App {
-    pub fn new(initial_image_protocol: StatefulProtocol,img2: StatefulProtocol) -> Self {
+    pub fn new(
+        // these are both the images or not the images but like the things to hold the images
+        initial_image_protocol: StatefulProtocol,
+        img2: StatefulProtocol,
+        img3: StatefulProtocol,
+        img4: StatefulProtocol
+        ) -> Self {
         App {
             running: true,
             birthday: together(),
             image: initial_image_protocol,
             image2: img2,
+            image3:img3,
+            image4:img4,
             is_luffy_default: true,
             is_sanji: true,
             counter: 0,
+           
 
         }
+
     }
 
     pub fn run(mut self,mut terminal: Terminal<CrosstermBackend<impl io::Write>>,) -> Result<()> {
@@ -48,8 +61,10 @@ impl App {
         let main_layout = Layout::new(
             Direction::Vertical,
             [
-                Constraint::Percentage(50),
-                Constraint::Percentage(50),
+                Constraint::Percentage(25),
+                Constraint::Percentage(25),
+                Constraint::Percentage(25),
+                Constraint::Percentage(25)
             ],
         )
         .split(frame.area());
@@ -73,10 +88,16 @@ impl App {
 
 
         let image_widget = StatefulImage::default();
-        frame.render_stateful_widget(image_widget, main_layout[0], &mut self.image);
+        frame.render_stateful_widget(image_widget, main_layout[1], &mut self.image);
         
         let image_widget1 = StatefulImage::default();
-        frame.render_stateful_widget(image_widget1,main_layout[1], &mut self.image2);
+        frame.render_stateful_widget(image_widget1,main_layout[0], &mut self.image2);
+
+        let image_widget2 = StatefulImage::default();
+        frame.render_stateful_widget(image_widget2, main_layout[2], &mut self.image3);
+
+        let image_widget3 = StatefulImage::default();
+        frame.render_stateful_widget(image_widget3, main_layout[3], &mut self.image4);
 
     }
 
@@ -128,9 +149,16 @@ impl App {
         self.image2 = picker.new_resize_protocol(dyn_img);
         self.is_sanji = !self.is_sanji;
         Ok(())
+            // question can this bool not be local? becayse this function decided whast showing not
+            // the bool the bool is just the switch  i mean it would be same difference but would
+            // be less configuration// ok i tried it and baiscally its fucked because you need to
+            // call a function from outside the app impl and thats fucked because you dont get and
+            // of the self. so its cooked just keep that tbh
 
             }
+  
 
+    
     fn handle_crossterm_events(&mut self) -> Result<()> {
         if event::poll(std::time::Duration::from_millis(250))? {
             match event::read()? {
@@ -156,6 +184,7 @@ impl App {
                 }
             },
             (_,KeyCode::Char('w')) => {
+               
                 self.increment_counter()
             }
             (_,KeyCode::Char('s'))=> {
@@ -198,6 +227,8 @@ fn read_file() -> Result<String> {
     })
 }
 
+
+
 fn main() -> Result<()> {
     color_eyre::install()?;
 
@@ -212,13 +243,38 @@ fn main() -> Result<()> {
         .decode()
         .map_err(|e| eyre::eyre!("Failed to decode image: {}", e))?;
     let image_protocol = picker.new_resize_protocol(dyn_img);
-    
+
+
+    // zoro sanh
     let picker1 = Picker::from_query_stdio()?;
     let dyn_img1 = image::ImageReader::open("./assets/sanji.png")?
         .decode()?;
     let image_protocol1 = picker1.new_resize_protocol(dyn_img1);
 
-    let app = App::new(image_protocol,image_protocol1);
+
+    //chopp
+    let chopper_picker = Picker::from_query_stdio()?;
+    let chipper = "chopper.png";
+    let path = format!("./assets/{}",chipper);
+    let chop_img = image::ImageReader::open(path)?
+        .decode()?;
+    let chop_img_pro = chopper_picker.new_resize_protocol(chop_img);
+    // so chopper is basically connected to the self.image becasyse the 3rd protocaol which is
+    // passed to the function the App impl up top is the protocol which is connected to the
+    // self.image3 and right here is the same as we are passing chop_img_pro as the 3rd arguement
+    //
+
+    let birth_today = Picker::from_query_stdio()?;
+    let path1 = today_date();
+    let path = format!("./assets/{}/1.png",path1);
+    let birth_img = image::ImageReader::open(path)?
+        .decode()?;
+    let birth_img_protocol = birth_today.new_resize_protocol(birth_img);
+    
+
+
+
+    let app = App::new(image_protocol,image_protocol1,chop_img_pro,birth_img_protocol);
     let result = app.run(terminal);
 
     execute!(stdout(), LeaveAlternateScreen)?;
