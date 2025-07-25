@@ -2,38 +2,17 @@ use chrono::Local;
 use color_eyre::eyre::{self, Result};
 use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    execute,
-    terminal::{
-        disable_raw_mode,
-        enable_raw_mode,
-        EnterAlternateScreen,
-        LeaveAlternateScreen,
-    },
-};
-use ratatui::{
-    layout::{Constraint, Direction, Layout},
-    prelude::CrosstermBackend,
-    style::Stylize,
-    text::Line,
-    widgets::{Block, Paragraph},
-    Frame,
-    Terminal,
-};
-use ratatui_image::{
-    picker::Picker,
-    protocol::StatefulProtocol,
-    StatefulImage,
-};
-use std::{
-    fs,
-    io::{self, stdout},
-};
+    execute,terminal::{ disable_raw_mode,enable_raw_mode,EnterAlternateScreen,LeaveAlternateScreen,}};
+use ratatui::{layout::{Constraint, Direction, Layout},prelude::CrosstermBackend,style::Stylize,text::Line,widgets::{Block, Paragraph},Frame,Terminal,};
+use ratatui_image::{ picker::Picker,protocol::StatefulProtocol,StatefulImage,};
+use std::{fs,io::{self, stdout},};
 
 pub struct App {
     running: bool,
     birthday: String,
     image: StatefulProtocol,
     is_luffy_default:bool,
+    counter: u8,
 }
 
 impl App {
@@ -43,6 +22,7 @@ impl App {
             birthday: together(),
             image: initial_image_protocol,
             is_luffy_default: true,
+            counter: 0,
 
         }
     }
@@ -74,9 +54,11 @@ impl App {
             "Hello, Ratatui!\n\n\
             Created using https://github.com/ratatui/templates\n\
             Press `Esc`, `Ctrl-C` or `q` to stop running.\n\n\
-            Birthday Info: {}",
-            self.birthday
+            Birthday Info: {}
+            Counter {}",
+            self.birthday, self.counter
         );
+       
 
         frame.render_widget(
             Paragraph::new(text_content)
@@ -84,6 +66,7 @@ impl App {
                 .centered(),
             main_layout[0],
         );
+
 
         let image_widget = StatefulImage::default();
         frame.render_stateful_widget(image_widget, main_layout[0], &mut self.image);
@@ -96,12 +79,7 @@ impl App {
     //
    
          pub fn toggle_image(&mut self) -> Result<()> {
-        let _current_path = if self.is_luffy_default {
-            "./assets/luffy.png"
-        } else {
-            "./assets/luffy2.png"
-        };
-        
+      
         let next_path = if self.is_luffy_default {
             "./assets/luffy2.png"
         } else {
@@ -112,6 +90,11 @@ impl App {
         // also since i want to change the state of something in the App struct
         // i need to make it a method on the App struct or else how would i be able to acccess the
         // self stuff
+        //
+        // i think if i want more pictures instead of using a vector il just spam this next_path
+        // and instead of a bool i can just make it a number and a match case and then if the index
+        // is at the max i can just make it so that if index==max(wtvr) each press is a negative
+        // now or i can just make another key the negative
         let picker = Picker::from_query_stdio()?;
         let dyn_img = image::ImageReader::open(next_path)?
             .decode()
@@ -146,8 +129,14 @@ impl App {
                     eprintln!("Error toggling image: {}",e);
                 }
             },
+            (_,KeyCode::Char('w')) => {
+                self.increment_counter()
+            }
             _ => {}
         }
+    }
+    fn increment_counter(&mut self) {
+        self.counter+=1;
     }
 
     fn quit(&mut self) {
